@@ -4,5 +4,8 @@ version = "0.0.0"
 authors = ["Jake <jake@jakeswenson.com>"]
 edition = "2018"
 
+description = "a rust based stoken implementation"
+license = "MIT"
+
 [dependencies]
 aes = "0.3.2"
