@@ -35,14 +35,11 @@ fn cbc_hash(output: &mut [u8; BLOCK_SIZE], key: &[u8], iv: &[u8], data: &[u8]) {
     for (idx, &v) in iv.iter().enumerate() {
         output[idx] = v;
     }
-    use std::boxed::Box;
 
     for i in (0..data.len()).step_by(BLOCK_SIZE) {
         xor_block(output, &data[i..i + BLOCK_SIZE]);
-        let mut tmp = [0u8; BLOCK_SIZE];
-        for i in 0..BLOCK_SIZE { tmp[i] = output[i]; }
-        let encryptor = aes::encrypt(output, &mut tmp);
-        for i in 0..BLOCK_SIZE { output[i] = tmp[i]; }
+        let result = aes::encrypt(key, output);
+        for i in 0..BLOCK_SIZE { output[i] = result[i]; }
     }
 }
 
@@ -83,10 +80,8 @@ fn hash(params: &SecretHashParams) -> [u8; BLOCK_SIZE] {
 }
 
 fn decrypt(xor_bytes: &[u8], data: &[u8], key: &[u8]) -> [u8; BLOCK_SIZE] {
-
     let mut result = aes::encrypt(key, data);
     xor_block(&mut result, xor_bytes);
-
     result
 }
 

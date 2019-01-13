@@ -80,9 +80,10 @@ pub fn read_file<P: AsRef<Path>>(file_path: P) -> TKNBatch {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {
-        let token = super::read_file("/Users/jswenson/Desktop/jswenson_token.sdtid");
+    fn parse_xml_succeeds() {
+        use crate::tokens::generate::tests::test_file;
+        let token = super::read_file(test_file());
         println!("{:?}", token);
-        assert_eq!(token.token.user_login, "jswenson");
+        assert_eq!(token.token.user_login, "jake");
     }
 }

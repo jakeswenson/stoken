@@ -1,11 +1,11 @@
 use bytes;
 
+use self::aes::{BLOCK_SIZE, KEY_SIZE};
+
 pub mod xml;
 mod aes;
 pub mod crypto;
 pub mod generate;
-
-use self::aes::{KEY_SIZE, BLOCK_SIZE};
 
 pub enum TokenDuration {
     ThirtySecond,
@@ -13,33 +13,21 @@ pub enum TokenDuration {
 }
 
 impl TokenDuration {
-    fn mask(&self) -> u32 {
-        match self {
-            TokenDuration::ThirtySecond => 0b01,
-            TokenDuration::SixtySecond => 0b11
-        }
-    }
-
     pub fn time_index<Time: chrono::Timelike>(&self, time: Time) -> usize {
         match self {
             TokenDuration::ThirtySecond => {
-                let minute_part: usize = ((time.minute() & self.mask()) as usize) << 3;
-                let is_second_30 = if time.second() >= 30 { 0b100 } else { 0 };
-                minute_part | is_second_30
+                let minute_part: usize = ((time.minute() & 0b01) as usize) << 3;
+                let second_half = if time.second() >= 30 { 0b100 } else { 0b000 };
+                minute_part | second_half
             }
             TokenDuration::SixtySecond => {
-                ((time.minute() & self.mask()) as usize) << 2
+                ((time.minute() & 0b11) as usize) << 2
             }
         }
     }
 
     pub fn adjust_for_hash<Time: chrono::Timelike>(&self, time: Time) -> i32 {
-        time.minute() as i32 & self.inverted_mask()
-    }
-
-
-    fn inverted_mask(&self) -> i32 {
-        match self {
+        time.minute() as i32 & match self {
             TokenDuration::ThirtySecond => !0b01,
             TokenDuration::SixtySecond => !0b11
         }

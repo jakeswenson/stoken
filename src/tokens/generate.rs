@@ -54,7 +54,7 @@ mod bcd {
             assert_eq!(bcd2(1), 1);
             assert_eq!(bcd2(13), 19);
             assert_eq!(bcd2(5), 5);
-            assert_eq!(bcd2(31), 48);
+            assert_eq!(bcd2(31), 49);
         }
     }
 }
@@ -68,6 +68,9 @@ fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: DateTim
     let hour = bcd2(time.hour() as i32);
     let minute = bcd2(token.token_duration.adjust_for_hash(time));
 
+    println!("hour: {}", time.hour());
+    println!("minute: {}", time.minute());
+
     let bcd_time: [u8; 8] = [
         year_first,
         year_second,
@@ -79,31 +82,31 @@ fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: DateTim
         0
     ];
 
-    println!("bcd: {:?}", bcd_time);
+    println!("bcd: {:x?}", bcd_time);
 
 //    key_from_time(bcd_time, 2, t->serial, key0);
 //    stc_aes128_ecb_encrypt(t->dec_seed, key0, key0);
-    let first_key = key_from_time(&bcd_time[0..2], token.serial_number());
+    let first_key = key_from_time(&bcd_time[..2], token.serial_number());
     let mut first_pass = encrypt(&token.dec_seed, &first_key);
 
     //    key_from_time(bcd_time, 3, t->serial, key1);
 //    stc_aes128_ecb_encrypt(key0, key1, key1);
-    let second_key = key_from_time(&bcd_time[0..3], token.serial_number());
+    let second_key = key_from_time(&bcd_time[..3], token.serial_number());
     let mut second_pass = encrypt(&first_pass, &second_key);
 
 //    key_from_time(bcd_time, 4, t->serial, key0);
 //    stc_aes128_ecb_encrypt(key1, key0, key0);
-    let third_key = key_from_time(&bcd_time[0..4], token.serial_number());
+    let third_key = key_from_time(&bcd_time[..4], token.serial_number());
     let mut third_pass = encrypt(&second_pass, &third_key);
 
 //    key_from_time(bcd_time, 5, t->serial, key1);
 //    stc_aes128_ecb_encrypt(key0, key1, key1);
-    let fourth_key = key_from_time(&bcd_time[0..5], token.serial_number());
+    let fourth_key = key_from_time(&bcd_time[..5], token.serial_number());
     let mut fourth_pass = encrypt(&third_pass, &fourth_key);
 
 //    key_from_time(bcd_time, 8, t->serial, key0);
 //    stc_aes128_ecb_encrypt(key1, key0, key0);
-    let fifth_key = key_from_time(&bcd_time[0..8], token.serial_number());
+    let fifth_key = key_from_time(&bcd_time[..8], token.serial_number());
     let mut fifth_pass = encrypt(&fourth_pass, &fifth_key);
 
 //    /* key0 now contains 4 consecutive token codes */
@@ -170,13 +173,19 @@ fn key_from_time(bcd_time: &[u8], serial: &str) -> [u8; 16] {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use std::path::PathBuf;
     use std::str::FromStr;
 
     use chrono::{Datelike, DateTime, FixedOffset, Timelike, TimeZone, Utc};
 
     use crate::tokens::{RSAToken, TokenDuration};
+
+    pub fn test_file() -> PathBuf {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("tests/test.sdtid");
+        path
+    }
 
     #[test]
     fn generate() {
@@ -187,9 +196,9 @@ mod tests {
         let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         d.push("tests/test.sdtid");
 
-        println!("Test: {:?}", d);
+        println!("Test: {:?}", test_file());
 
-        let token = xml::read_file(d);
+        let token = xml::read_file(test_file());
         let decrypted_seed = crypto::extract_seed(&token);
 
         let token = RSAToken::new(
