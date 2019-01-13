@@ -61,6 +61,7 @@ mod bcd {
 
 fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: DateTime) -> String {
     use self::bcd::{bcd2, bcd4};
+    use super::aes::encrypt;
     let (year_first, year_second) = bcd4(time.year());
     let month = bcd2(time.month() as i32);
     let day = bcd2(time.day() as i32);
@@ -148,16 +149,6 @@ fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: DateTim
 //        if (i < pin_len)
 //        c += t->pin[pin_len - i - 1] - '0';
 //        code_out[j] = c % 10 + '0';
-}
-
-fn encrypt(key: &[u8], data: &[u8]) -> [u8; 16] {
-    use nettle::cipher::{Cipher, Aes128};
-    let mut output = [0u8; 16];
-
-    let mut s: Aes128 = Aes128::with_encrypt_key(key).unwrap();
-    s.encrypt(&mut output, data);
-
-    output
 }
 
 fn key_from_time(bcd_time: &[u8], serial: &str) -> [u8; 16] {

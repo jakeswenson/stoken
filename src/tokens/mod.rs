@@ -1,10 +1,11 @@
 use bytes;
-use nettle::cipher::{Aes128, Cipher};
-
-const KEY_SIZE: usize = Aes128::KEY_SIZE;
 
 pub mod xml;
+mod aes;
 pub mod crypto;
+pub mod generate;
+
+use self::aes::{KEY_SIZE, BLOCK_SIZE};
 
 pub enum TokenDuration {
     ThirtySecond,

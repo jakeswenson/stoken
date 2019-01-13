@@ -5,5 +5,3 @@ mod tokens;
 
 pub use crate::tokens::RSAToken;
 
-mod generate;
-
