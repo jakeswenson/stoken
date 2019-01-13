@@ -1,12 +1,9 @@
+#[macro_use]
+extern crate serde_derive;
 
-use aes;
-fn run() {
-}
+mod tokens;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+pub use crate::tokens::RSAToken;
+
+mod generate;
+

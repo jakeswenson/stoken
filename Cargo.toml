@@ -8,4 +8,10 @@ description = "a rust based stoken implementation"
 license = "MIT"
 
 [dependencies]
-aes = "0.3.2"
+nettle = "2.1.0"
+serde-xml-rs = "0.3.0"
+serde = "1.0.84"
+serde_derive = "1.0.84"
+chrono = "0.4.6"
+bytes = "0.4.11"
+base64 = "0.10.0"
