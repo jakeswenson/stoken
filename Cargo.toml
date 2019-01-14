@@ -14,3 +14,11 @@ serde_derive = "1.0.84"
 chrono = "0.4.6"
 base64 = "0.10.0"
 rust-crypto = "0.2.36"
+
+[lib]
+name = "stoken"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rstoken"
+path = "src/bin.rs"
