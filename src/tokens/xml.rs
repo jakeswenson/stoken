@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::path::Path;
 
+use serde::{Deserialize, Serialize};
 use serde_xml_rs::{from_reader, from_str};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -76,7 +77,7 @@ pub fn read_file<P: AsRef<Path>>(file_path: P) -> TKNBatch {
     from_reader(file).unwrap()
 }
 
-pub fn read_string(contents: &str) -> TKNBatch {
+pub fn read_xml_string(contents: &str) -> TKNBatch {
     from_str(contents).unwrap()
 }
 

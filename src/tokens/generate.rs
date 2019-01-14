@@ -100,7 +100,7 @@ pub fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: Dat
     ];
 
     let first_key = key_from_time(&bcd_time[..2], token.serial_number());
-    let first_pass = encrypt(&token.dec_seed, &first_key);
+    let first_pass = encrypt(token.dec_seed.as_ref(), &first_key);
 
     let second_key = key_from_time(&bcd_time[..3], token.serial_number());
     let second_pass = encrypt(&first_pass, &second_key);
@@ -162,9 +162,7 @@ pub mod tests {
         let decrypted_seed = crypto::extract_seed(&token);
         println!("seed: {:X?}", decrypted_seed);
 
-        let token = RSAToken::new(
-            token,
-            [1, 2, 3, 4, 5].to_vec());
+        let token = RSAToken::from_xml(token, [1, 2, 3, 4, 5].to_vec());
 
         let time = FixedOffset::east(0).ymd(2019, 1, 13).and_hms(21, 19, 34);
 
@@ -181,9 +179,7 @@ pub mod tests {
 
         let token = xml::read_file(test_file());
 
-        let token = RSAToken::new(
-            token,
-            [1, 2, 3, 4, 5].to_vec());
+        let token = RSAToken::from_xml(token, [1, 2, 3, 4, 5].to_vec());
 
         let output = super::generate(token, Utc::now());
         println!("Token: {}", output);

@@ -1,8 +1,13 @@
+use serde::{Deserialize, Serialize};
+
 pub mod xml;
 mod aes;
 pub mod crypto;
 pub mod generate;
 
+pub mod export;
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum TokenDuration {
     ThirtySecond,
     SixtySecond,
@@ -30,23 +35,41 @@ impl TokenDuration {
     }
 }
 
-use self::aes::KEY_SIZE;
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct RSAToken {
     serial_number: String,
     pub token_duration: TokenDuration,
     pub digits: usize,
-    pub dec_seed: [u8; KEY_SIZE],
+    pub dec_seed: Vec<u8>,
     pub pin: Vec<u8>,
 }
 
 impl RSAToken {
-    pub fn new(token: self::xml::TKNBatch, pin: Vec<u8>) -> RSAToken {
+    pub fn new(serial_number: String,
+               token_duration: TokenDuration,
+               num_digits: usize,
+               seed: Vec<u8>,
+               pin: Vec<u8>) -> RSAToken {
+        return RSAToken {
+            serial_number,
+            token_duration,
+            digits: num_digits,
+            dec_seed: seed,
+            pin,
+        };
+    }
+
+    pub fn from_xml(token: self::xml::TKNBatch, pin: Vec<u8>) -> RSAToken {
         let seed = self::crypto::extract_seed(&token);
         RSAToken {
             serial_number: token.token.serial_number,
-            token_duration: TokenDuration::SixtySecond,
+            token_duration: match token.header.interval {
+                60 => TokenDuration::SixtySecond,
+                30 => TokenDuration::ThirtySecond,
+                interval => panic!("Unknown token interval {}", interval)
+            },
             digits: token.header.number_of_digits,
-            dec_seed: seed,
+            dec_seed: seed.to_vec(),
             pin,
         }
     }

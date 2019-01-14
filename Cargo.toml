@@ -1,6 +1,6 @@
 [package]
 name = "stoken"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Jake <jake@jakeswenson.com>"]
 edition = "2018"
 
@@ -8,9 +8,9 @@ description = "a rust based stoken implementation"
 license = "MIT"
 
 [dependencies]
-serde = "1.0.84"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 serde-xml-rs = "0.3.0"
-serde_derive = "1.0.84"
 chrono = "0.4.6"
 base64 = "0.10.0"
 rust-crypto = "0.2.36"
