@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::path::Path;
 
-use serde_xml_rs::from_reader;
+use serde_xml_rs::{from_reader, from_str};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "PascalCase")]
@@ -27,7 +27,7 @@ pub struct TKNHeader {
     pub alg: i32,
 
     #[serde(rename = "DefDigits")]
-    pub digits: usize,
+    pub number_of_digits: usize,
 
     #[serde(rename = "DefMode")]
     pub mode: i32,
@@ -74,6 +74,10 @@ pub struct TKNBatch {
 pub fn read_file<P: AsRef<Path>>(file_path: P) -> TKNBatch {
     let file = File::open(file_path).unwrap();
     from_reader(file).unwrap()
+}
+
+pub fn read_string(contents: &str) -> TKNBatch {
+    from_str(contents).unwrap()
 }
 
 

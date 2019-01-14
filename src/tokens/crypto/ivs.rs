@@ -1,4 +1,4 @@
-use super::super::KEY_SIZE;
+use super::aes::KEY_SIZE;
 
 pub struct IV([u8; KEY_SIZE]);
 

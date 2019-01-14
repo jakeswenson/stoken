@@ -1,7 +1,3 @@
-use bytes;
-
-use self::aes::{BLOCK_SIZE, KEY_SIZE};
-
 pub mod xml;
 mod aes;
 pub mod crypto;
@@ -34,21 +30,22 @@ impl TokenDuration {
     }
 }
 
+use self::aes::KEY_SIZE;
 pub struct RSAToken {
     serial_number: String,
     pub token_duration: TokenDuration,
     pub digits: usize,
     pub dec_seed: [u8; KEY_SIZE],
-
     pub pin: Vec<u8>,
 }
 
 impl RSAToken {
-    pub fn new(sn: String, token_duration: TokenDuration, digits: usize, pin: Vec<u8>, seed: [u8; KEY_SIZE]) -> RSAToken {
+    pub fn new(token: self::xml::TKNBatch, pin: Vec<u8>) -> RSAToken {
+        let seed = self::crypto::extract_seed(&token);
         RSAToken {
-            serial_number: sn,
-            token_duration,
-            digits,
+            serial_number: token.token.serial_number,
+            token_duration: TokenDuration::SixtySecond,
+            digits: token.header.number_of_digits,
             dec_seed: seed,
             pin,
         }

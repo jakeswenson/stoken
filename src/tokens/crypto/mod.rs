@@ -1,10 +1,10 @@
+use super::aes;
+use super::aes::{BLOCK_SIZE, KEY_SIZE};
 use super::xml::TKNHeader;
+
 use self::ivs::{IV, SEED_IV};
 
-use super::aes;
-
 mod ivs;
-use super::aes::{BLOCK_SIZE, KEY_SIZE};
 
 enum PasswordOrOriginParam {
     Password(String),
@@ -28,19 +28,22 @@ struct SecretHashParams {
 
 struct SecretCryptoParams {
     hash_params: SecretHashParams,
-    secret: String,
+    secret: Vec<u8>,
 }
 
-fn cbc_hash(output: &mut [u8; BLOCK_SIZE], key: &[u8], iv: &[u8], data: &[u8]) {
+fn cbc_hash(key: &[u8], iv: &[u8], data: &[u8]) -> [u8; BLOCK_SIZE] {
+    let mut output = [0u8; BLOCK_SIZE];
     for (idx, &v) in iv.iter().enumerate() {
         output[idx] = v;
     }
 
     for i in (0..data.len()).step_by(BLOCK_SIZE) {
-        xor_block(output, &data[i..i + BLOCK_SIZE]);
-        let result = aes::encrypt(key, output);
+        xor_block(&mut output, &data[i..i + BLOCK_SIZE]);
+        let result = aes::encrypt(key, &output);
         for i in 0..BLOCK_SIZE { output[i] = result[i]; }
     }
+
+    return output;
 }
 
 fn xor_block(first: &mut [u8], second: &[u8]) {
@@ -53,7 +56,7 @@ fn xor_block(first: &mut [u8], second: &[u8]) {
 fn hash(params: &SecretHashParams) -> [u8; BLOCK_SIZE] {
     let mut data = [0u8; 0x50];
     let mut result = [0u8; BLOCK_SIZE];
-    let mut iv = [0u8; BLOCK_SIZE];
+    let iv = [0u8; BLOCK_SIZE];
     let mut key = [0u8; KEY_SIZE];
 
     for (idx, name_byte) in params.name.bytes().enumerate() {
@@ -69,10 +72,9 @@ fn hash(params: &SecretHashParams) -> [u8; BLOCK_SIZE] {
     }
 
     for iteration in 0..1000 {
-        data[0x4f] = iteration as u8;
-        data[0x43] = (iteration >> 8) as u8;
-        let mut tmp = [0u8; BLOCK_SIZE];
-        cbc_hash(&mut tmp, &key, &iv, &data);
+        data[0x4F] = iteration as u8;
+        data[0x4E] = (iteration >> 8) as u8;
+        let tmp = cbc_hash(&key, &iv, &data);
         xor_block(&mut result, &tmp);
     }
 
@@ -85,11 +87,8 @@ fn decrypt(xor_bytes: &[u8], data: &[u8], key: &[u8]) -> [u8; BLOCK_SIZE] {
     result
 }
 
-
 fn decrypt_secret(secret_params: SecretCryptoParams) -> [u8; BLOCK_SIZE] {
     let hash = hash(&secret_params.hash_params);
-    println!("got hash");
-    let secret_data = secret_params.secret.into_bytes();
     let mut data: Vec<u8> = Vec::new();
     data.extend_from_slice(&b"Secret"[..]);
     data.push(0);
@@ -97,35 +96,42 @@ fn decrypt_secret(secret_params: SecretCryptoParams) -> [u8; BLOCK_SIZE] {
     let bytes = secret_params.hash_params.name.bytes();
     let len = bytes.len();
     data.extend(bytes);
-    for i in len..8 { data.push(0); }
+    for _ in len..8 { data.push(0); }
 
-    println!("data len: {}", data.len());
 
+    let mut result = aes::encrypt(&hash, &data);
+    let secret_data = secret_params.secret.as_ref();
+    xor_block(&mut result, &secret_data);
     let result = decrypt(
-        &secret_data[..],
+        &secret_data,
         &data,
         &hash);
 
     return result;
 }
 
-fn compute_key(field: &str, serial: &str, key: [u8; KEY_SIZE], iv: IV) -> [u8; KEY_SIZE] {
+fn compute_key(field: &[u8], serial: &str, key: &[u8], iv: IV) -> [u8; KEY_SIZE] {
     let mut data = [0u8; 0x40];
 
     use std::cmp::min;
     for i in 0..min(0x20, field.len()) {
-        data[i] = field.as_bytes()[i];
+        data[i] = field[i];
     }
 
+    let serial_bytes = serial.as_bytes();
     for i in 0x20..(0x20 + min(0x20, serial.len())) {
-        data[i] = serial.as_bytes()[i];
+        data[i] = serial_bytes[i - 0x20];
     }
 
-    let mut computed_key = [0u8; KEY_SIZE];
-
-    cbc_hash(&mut computed_key, &key, iv.bytes(), &data);
-
-    return computed_key;
+    return cbc_hash(&key, iv.bytes(), &data);
+    /*
+	memset(buf, 0, sizeof(buf));
+	strncpy(&buf[0x00], str0, 0x20);
+	strncpy(&buf[0x20], str1, 0x20);
+	cbc_hash(result, key, iv, buf, sizeof(buf));
+	static void cbc_hash(uint8_t *result, const uint8_t *key, const uint8_t *iv,
+	const uint8_t *data, int len)
+	*/
 }
 
 struct SeedCryptoParams {
@@ -140,7 +146,7 @@ fn decrypt_seed(seed_params: SeedCryptoParams) -> [u8; BLOCK_SIZE] {
     let serial_bytes = seed_params.serial.as_bytes();
     let len = min(8, serial_bytes.len());
     data.extend_from_slice(&serial_bytes[0..len]);
-    for i in len..8 { data.push(0); }
+    for _ in len..8 { data.push(0); }
     data.extend(b"Seed");
     data.extend_from_slice(&[0, 0, 0, 0]);
 
@@ -157,11 +163,11 @@ pub fn extract_seed(token: &super::xml::TKNBatch) -> [u8; BLOCK_SIZE] {
     use base64::decode;
     let secret_params = SecretCryptoParams::from(token.header.clone());
     let key = decrypt_secret(secret_params);
-    println!("decrypted secret");
+    let encryption_key = compute_key(b"TokenEncrypt", &token.token.serial_number, &key, SEED_IV);
     let seed_params = SeedCryptoParams {
         encrypted_seed: decode(&token.token.seed[1..]).unwrap(),
-        encryption_key: key,
         serial: token.token.serial_number,
+        encryption_key,
     };
 
     decrypt_seed(seed_params)
@@ -181,7 +187,7 @@ impl From<TKNHeader> for SecretCryptoParams {
     fn from(header: TKNHeader) -> Self {
         SecretCryptoParams {
             hash_params: SecretHashParams::from(header.clone()),
-            secret: header.secret,
+            secret: base64::decode(&header.secret).unwrap(),
         }
     }
 }
