@@ -1,6 +1,6 @@
 [package]
 name = "stoken"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Jake <jake@jakeswenson.com>"]
 edition = "2018"
 

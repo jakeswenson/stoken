@@ -122,12 +122,14 @@ pub fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: Dat
 
     let mut code_out = String::new();
 
+    let pin: Vec<u8> = token.pin.as_bytes().iter().map(|b| b - b'0').collect();
+
     for i in 0..token.digits {
         let mut dig = token_code % 10;
         token_code /= 10;
 
-        if i < token.pin.len() {
-            let pin_dig = token.pin[token.pin.len() - i - 1];
+        if i < pin.len() {
+            let pin_dig = pin[pin.len() - i - 1];
             dig += pin_dig as u32;
         }
 
@@ -162,7 +164,7 @@ pub mod tests {
         let decrypted_seed = crypto::extract_seed(&token);
         println!("seed: {:X?}", decrypted_seed);
 
-        let token = RSAToken::from_xml(token, [1, 2, 3, 4, 5].to_vec());
+        let token = RSAToken::from_xml(token, "12345");
 
         let time = FixedOffset::east(0).ymd(2019, 1, 13).and_hms(21, 19, 34);
 
@@ -179,7 +181,7 @@ pub mod tests {
 
         let token = xml::read_file(test_file());
 
-        let token = RSAToken::from_xml(token, [1, 2, 3, 4, 5].to_vec());
+        let token = RSAToken::from_xml(token, "12345");
 
         let output = super::generate(token, Utc::now());
         println!("Token: {}", output);

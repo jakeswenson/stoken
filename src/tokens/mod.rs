@@ -41,7 +41,7 @@ pub struct RSAToken {
     pub token_duration: TokenDuration,
     pub digits: usize,
     pub dec_seed: Vec<u8>,
-    pub pin: Vec<u8>,
+    pub pin: String,
 }
 
 impl RSAToken {
@@ -49,7 +49,7 @@ impl RSAToken {
                token_duration: TokenDuration,
                num_digits: usize,
                seed: Vec<u8>,
-               pin: Vec<u8>) -> RSAToken {
+               pin: String) -> RSAToken {
         return RSAToken {
             serial_number,
             token_duration,
@@ -59,7 +59,7 @@ impl RSAToken {
         };
     }
 
-    pub fn from_xml(token: self::xml::TKNBatch, pin: Vec<u8>) -> RSAToken {
+    pub fn from_xml(token: self::xml::TKNBatch, pin: &str) -> RSAToken {
         let seed = self::crypto::extract_seed(&token);
         RSAToken {
             serial_number: token.token.serial_number,
@@ -70,7 +70,7 @@ impl RSAToken {
             },
             digits: token.header.number_of_digits,
             dec_seed: seed.to_vec(),
-            pin,
+            pin: pin.to_owned(),
         }
     }
 
