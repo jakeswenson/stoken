@@ -3,9 +3,13 @@ name = "stoken"
 version = "0.0.5"
 authors = ["Jake <jake@jakeswenson.com>"]
 edition = "2018"
-
 description = "a rust based stoken implementation"
 license = "MIT"
+readme = "README.md"
+keywords =  ["stoken", "rsa"]
+
+[badges]
+travis-ci = {repository = "jakeswenson/stoken", branch="master"}
 
 [dependencies]
 serde = { version = "^1.0", features = ["derive"] }
