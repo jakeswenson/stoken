@@ -1,6 +1,6 @@
 [package]
 name = "stoken"
-version = "0.0.5"
+version = "0.0.6"
 authors = ["Jake <jake@jakeswenson.com>"]
 edition = "2018"
 description = "a rust based stoken implementation"
