@@ -1,5 +1,5 @@
-use crypto::{blockmodes::NoPadding, aes, aes::KeySize};
 use crypto::buffer::{RefReadBuffer, RefWriteBuffer};
+use crypto::{aes, aes::KeySize, blockmodes::NoPadding};
 
 pub const KEY_SIZE: usize = 16;
 pub const BLOCK_SIZE: usize = 16;

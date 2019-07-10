@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-pub mod xml;
 mod aes;
 pub mod crypto;
 pub mod generate;
+pub mod xml;
 
 pub mod export;
 
@@ -21,17 +21,16 @@ impl TokenDuration {
                 let second_half = if time.second() >= 30 { 0b100 } else { 0b000 };
                 minute_part | second_half
             }
-            TokenDuration::SixtySecond => {
-                ((time.minute() & 0b11) as usize) << 2
-            }
+            TokenDuration::SixtySecond => ((time.minute() & 0b11) as usize) << 2,
         }
     }
 
     pub fn adjust_for_hash<Time: chrono::Timelike>(&self, time: Time) -> i32 {
-        time.minute() as i32 & match self {
-            TokenDuration::ThirtySecond => !0b01,
-            TokenDuration::SixtySecond => !0b11
-        }
+        time.minute() as i32
+            & match self {
+                TokenDuration::ThirtySecond => !0b01,
+                TokenDuration::SixtySecond => !0b11,
+            }
     }
 }
 
@@ -45,11 +44,13 @@ pub struct RSAToken {
 }
 
 impl RSAToken {
-    pub fn new(serial_number: String,
-               token_duration: TokenDuration,
-               num_digits: usize,
-               seed: Vec<u8>,
-               pin: String) -> RSAToken {
+    pub fn new(
+        serial_number: String,
+        token_duration: TokenDuration,
+        num_digits: usize,
+        seed: Vec<u8>,
+        pin: String,
+    ) -> RSAToken {
         RSAToken {
             serial_number,
             token_duration,
@@ -66,7 +67,7 @@ impl RSAToken {
             token_duration: match token.header.interval {
                 60 => TokenDuration::SixtySecond,
                 30 => TokenDuration::ThirtySecond,
-                interval => panic!("Unknown token interval {}", interval)
+                interval => panic!("Unknown token interval {}", interval),
             },
             digits: token.header.number_of_digits,
             dec_seed: seed.to_vec(),

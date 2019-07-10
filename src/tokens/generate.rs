@@ -27,7 +27,6 @@ mod bcd {
 
         #[test]
         fn wiki() {
-
             // https://en.wikipedia.org/wiki/Binary-coded_decimal#Basics
             assert_eq!(bcd2(91), 0b1001_0001);
             assert_eq!(bcd2(01), 0b0000_0001);
@@ -42,7 +41,8 @@ mod bcd {
                 (0b1001_1000, 0b0111_0110),
                 "9876 should was {:#b}, {:#b}",
                 bcd9876.0,
-                bcd9876.1);
+                bcd9876.1
+            );
 
             let bcd2019 = bcd4(2019);
             assert_eq!(
@@ -50,7 +50,8 @@ mod bcd {
                 (0b0010_0000, 0b0001_1001),
                 "2019 should was {:#b}, {:#b}",
                 bcd2019.0,
-                bcd2019.1);
+                bcd2019.1
+            );
 
             assert_eq!(bcd4(2019), (32, 25));
             assert_eq!(bcd2(1), 1);
@@ -63,9 +64,16 @@ mod bcd {
 
 fn key_from_time(bcd_time: &[u8], serial: &str) -> [u8; KEY_SIZE] {
     let mut buf = [0u8; KEY_SIZE];
-    for i in 0..8 { buf[i] = 0xAA }
-    for i in 0..bcd_time.len() { buf[i] = bcd_time[i] }
-    for i in 12..buf.len() { buf[i] = 0xBB }
+
+    for spot in buf.iter_mut().take(8) {
+        *spot = 0xAA
+    }
+
+    buf[..bcd_time.len()].clone_from_slice(&bcd_time);
+
+    for buffer_pos in buf.iter_mut().skip(12) {
+        *buffer_pos = 0xBB
+    }
 
     let serial_bytes: Vec<u8> = serial.as_bytes().iter().map(|v| v - b'0').collect();
 
@@ -87,16 +95,7 @@ pub fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: Dat
     let hour = bcd2(time.hour() as i32);
     let minute = bcd2(token.token_duration.adjust_for_hash(time));
 
-    let bcd_time: [u8; 8] = [
-        year_first,
-        year_second,
-        month,
-        day,
-        hour,
-        minute,
-        0,
-        0
-    ];
+    let bcd_time: [u8; 8] = [year_first, year_second, month, day, hour, minute, 0, 0];
 
     let first_key = key_from_time(&bcd_time[..2], token.serial_number());
     let first_pass = encrypt(token.dec_seed.as_ref(), &first_key);
@@ -115,9 +114,9 @@ pub fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: Dat
 
     let index = token.token_duration.time_index(time);
 
-    let mut token_code =
-        fifth_pass[(index + 0)..(index + 4)].iter()
-            .fold(0, |acc, &byte| (acc << 8) | byte as u32);
+    let mut token_code = fifth_pass[index..(index + 4)]
+        .iter()
+        .fold(0, |acc, &byte| (acc << 8) | u32::from(byte));
 
     let mut code_out = String::new();
 
@@ -129,7 +128,7 @@ pub fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: Dat
 
         if i < pin.len() {
             let pin_dig = pin[pin.len() - i - 1];
-            dig += pin_dig as u32;
+            dig += u32::from(pin_dig);
         }
 
         code_out.insert(0, ((dig % 10) as u8 + b'0') as char);
@@ -154,8 +153,8 @@ pub mod tests {
 
     #[test]
     fn generate() {
-        use crate::tokens::xml;
         use crate::tokens::crypto;
+        use crate::tokens::xml;
 
         println!("Test: {:?}", test_file());
 
@@ -186,4 +185,3 @@ pub mod tests {
         println!("Token: {}", output);
     }
 }
-

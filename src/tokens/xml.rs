@@ -81,7 +81,6 @@ pub fn read_xml_string(contents: &str) -> TKNBatch {
     from_str(contents).unwrap()
 }
 
-
 #[cfg(test)]
 mod tests {
     #[test]

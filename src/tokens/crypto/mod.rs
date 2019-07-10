@@ -7,6 +7,7 @@ use self::ivs::{IV, SEED_IV};
 mod ivs;
 
 enum PasswordOrOriginParam {
+    #[allow(dead_code)]
     Password(String),
     Origin(String),
 }
@@ -14,8 +15,7 @@ enum PasswordOrOriginParam {
 impl PasswordOrOriginParam {
     fn value(&self) -> &String {
         match self {
-            PasswordOrOriginParam::Password(val)
-            | PasswordOrOriginParam::Origin(val) => val
+            PasswordOrOriginParam::Password(val) | PasswordOrOriginParam::Origin(val) => val,
         }
     }
 }
@@ -40,7 +40,8 @@ fn cbc_hash(key: &[u8], iv: &[u8], data: &[u8]) -> [u8; BLOCK_SIZE] {
     for i in (0..data.len()).step_by(BLOCK_SIZE) {
         xor_block(&mut output, &data[i..i + BLOCK_SIZE]);
         let result = aes::encrypt(key, &output);
-        for i in 0..BLOCK_SIZE { output[i] = result[i]; }
+
+        output[..BLOCK_SIZE].clone_from_slice(&result[..BLOCK_SIZE])
     }
 
     output
@@ -96,8 +97,9 @@ fn decrypt_secret(secret_params: SecretCryptoParams) -> [u8; BLOCK_SIZE] {
     let bytes = secret_params.hash_params.name.bytes();
     let len = bytes.len();
     data.extend(bytes);
-    for _ in len..8 { data.push(0); }
-
+    for _ in len..8 {
+        data.push(0);
+    }
 
     let mut result = aes::encrypt(&hash, &data);
     let secret_data = secret_params.secret.as_ref();
@@ -110,14 +112,14 @@ fn compute_key(field: &[u8], serial: &str, key: &[u8], iv: IV) -> [u8; KEY_SIZE]
     let mut data = [0u8; 0x40];
 
     use std::cmp::min;
-    for i in 0..min(0x20, field.len()) {
-        data[i] = field[i];
-    }
+    let min_field_index = min(0x20, field.len());
+
+    data[..min_field_index].clone_from_slice(&field[..min_field_index]);
 
     let serial_bytes = serial.as_bytes();
-    for i in 0x20..(0x20 + min(0x20, serial.len())) {
-        data[i] = serial_bytes[i - 0x20];
-    }
+    let min_index = min(0x20, serial.len());
+
+    data[0x20..(0x20 + min_index)].clone_from_slice(&serial_bytes[..min_index]);
 
     cbc_hash(&key, iv.bytes(), &data)
 }
@@ -134,11 +136,17 @@ fn decrypt_seed(seed_params: SeedCryptoParams) -> [u8; BLOCK_SIZE] {
     let serial_bytes = seed_params.serial.as_bytes();
     let len = min(8, serial_bytes.len());
     data.extend_from_slice(&serial_bytes[0..len]);
-    for _ in len..8 { data.push(0); }
+    for _ in len..8 {
+        data.push(0);
+    }
     data.extend(b"Seed");
     data.extend_from_slice(&[0, 0, 0, 0]);
 
-    decrypt(&seed_params.encrypted_seed, &data, &seed_params.encryption_key)
+    decrypt(
+        &seed_params.encrypted_seed,
+        &data,
+        &seed_params.encryption_key,
+    )
 }
 
 pub fn extract_seed(token: &super::xml::TKNBatch) -> [u8; BLOCK_SIZE] {
