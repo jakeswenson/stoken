@@ -43,7 +43,7 @@ fn cbc_hash(key: &[u8], iv: &[u8], data: &[u8]) -> [u8; BLOCK_SIZE] {
         for i in 0..BLOCK_SIZE { output[i] = result[i]; }
     }
 
-    return output;
+    output
 }
 
 fn xor_block(first: &mut [u8], second: &[u8]) {
@@ -102,12 +102,8 @@ fn decrypt_secret(secret_params: SecretCryptoParams) -> [u8; BLOCK_SIZE] {
     let mut result = aes::encrypt(&hash, &data);
     let secret_data = secret_params.secret.as_ref();
     xor_block(&mut result, &secret_data);
-    let result = decrypt(
-        &secret_data,
-        &data,
-        &hash);
 
-    return result;
+    decrypt(&secret_data, &data, &hash)
 }
 
 fn compute_key(field: &[u8], serial: &str, key: &[u8], iv: IV) -> [u8; KEY_SIZE] {
@@ -123,15 +119,7 @@ fn compute_key(field: &[u8], serial: &str, key: &[u8], iv: IV) -> [u8; KEY_SIZE]
         data[i] = serial_bytes[i - 0x20];
     }
 
-    return cbc_hash(&key, iv.bytes(), &data);
-    /*
-	memset(buf, 0, sizeof(buf));
-	strncpy(&buf[0x00], str0, 0x20);
-	strncpy(&buf[0x20], str1, 0x20);
-	cbc_hash(result, key, iv, buf, sizeof(buf));
-	static void cbc_hash(uint8_t *result, const uint8_t *key, const uint8_t *iv,
-	const uint8_t *data, int len)
-	*/
+    cbc_hash(&key, iv.bytes(), &data)
 }
 
 struct SeedCryptoParams {
@@ -150,12 +138,7 @@ fn decrypt_seed(seed_params: SeedCryptoParams) -> [u8; BLOCK_SIZE] {
     data.extend(b"Seed");
     data.extend_from_slice(&[0, 0, 0, 0]);
 
-    let result = decrypt(
-        &seed_params.encrypted_seed,
-        &data,
-        &seed_params.encryption_key);
-
-    return result;
+    decrypt(&seed_params.encrypted_seed, &data, &seed_params.encryption_key)
 }
 
 pub fn extract_seed(token: &super::xml::TKNBatch) -> [u8; BLOCK_SIZE] {

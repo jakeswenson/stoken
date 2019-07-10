@@ -62,7 +62,6 @@ mod bcd {
 }
 
 fn key_from_time(bcd_time: &[u8], serial: &str) -> [u8; KEY_SIZE] {
-    use std::iter::Iterator;
     let mut buf = [0u8; KEY_SIZE];
     for i in 0..8 { buf[i] = 0xAA }
     for i in 0..bcd_time.len() { buf[i] = bcd_time[i] }
@@ -76,7 +75,7 @@ fn key_from_time(bcd_time: &[u8], serial: &str) -> [u8; KEY_SIZE] {
         buf_pos += 1;
     }
 
-    return buf;
+    buf
 }
 
 pub fn generate<DateTime: Timelike + Datelike + Copy>(token: RSAToken, time: DateTime) -> String {

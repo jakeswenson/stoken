@@ -12,5 +12,5 @@ pub fn encrypt(key: &[u8], data: &[u8]) -> [u8; BLOCK_SIZE] {
     let mut encryptor = aes::ecb_encryptor(KeySize::KeySize128, key, NoPadding);
     encryptor.encrypt(&mut input, &mut output, true).unwrap();
 
-    return output_array;
+    output_array
 }

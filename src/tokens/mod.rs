@@ -50,13 +50,13 @@ impl RSAToken {
                num_digits: usize,
                seed: Vec<u8>,
                pin: String) -> RSAToken {
-        return RSAToken {
+        RSAToken {
             serial_number,
             token_duration,
             digits: num_digits,
             dec_seed: seed,
             pin,
-        };
+        }
     }
 
     pub fn from_xml(token: self::xml::TKNBatch, pin: &str) -> RSAToken {
